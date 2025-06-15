@@ -3,6 +3,7 @@ import sys
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from functions.call_function import call_function
 
 load_dotenv()
 api_key = os.environ.get("GEMINI_API_KEY")
@@ -78,7 +79,7 @@ schema_write_file = types.FunctionDeclaration(
                 type=types.Type.STRING,
                 description="The file to write to, relative to the working directory.",
             ),
-            "contents": types.Schema(
+            "content": types.Schema(
                 type=types.Type.STRING,
                 description="The contents to write into the file."
             )
@@ -104,8 +105,8 @@ response = client.models.generate_content(
 )
 print(f"{response.text}")
 if response.function_calls: 
-    function_call_part = response.function_calls[0]
-    print(f"Calling function: {function_call_part.name}({function_call_part.args})")
+    function_call_result = call_function(response.function_calls[0])
+    print(f"-> {function_call_result.parts[0].function_response.response}")
 if verbose:
     print(f"User prompt: {user_prompt}")
     print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
