@@ -33,7 +33,7 @@ def call_function(function_call_part, verbose=False):
 
     function_result = functions[function_name]("./calculator", **function_args)
     return types.Content(
-    role="tool",
+    role="model",
     parts=[
         types.Part.from_function_response(
             name=function_name,

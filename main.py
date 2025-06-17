@@ -95,19 +95,37 @@ available_functions = types.Tool(
     ]
 )
 client = genai.Client(api_key=api_key)
-response = client.models.generate_content(
-    model="gemini-2.0-flash-001",
-    contents=messages,
-    config=types.GenerateContentConfig(
-        tools=[available_functions],
-        system_instruction=system_prompt
+
+for _ in range(20):
+    response = client.models.generate_content(
+        model="gemini-2.0-flash-001",
+        contents=messages,
+        config=types.GenerateContentConfig(
+            tools=[available_functions],
+            system_instruction=system_prompt
+        )
     )
-)
-print(f"{response.text}")
-if response.function_calls: 
-    function_call_result = call_function(response.function_calls[0])
-    print(f"-> {function_call_result.parts[0].function_response.response}")
-if verbose:
-    print(f"User prompt: {user_prompt}")
-    print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-    print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+
+    if not response.candidates:
+        break
+
+    function_called = False
+    for candidate in response.candidates:
+        messages.append(candidate.content)
+        for part in candidate.content.parts:
+            if part.function_call:
+                function_call_result = call_function(part.function_call)
+                messages.append(function_call_result)
+                function_called = True
+                break
+        if function_called:
+            break
+
+    if not function_called:
+        final_response = response.text
+        print("Final response:")
+        print(final_response)
+        if verbose:
+            print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
+            print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+        break
